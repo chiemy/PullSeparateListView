@@ -1,6 +1,5 @@
 package com.chiemy.pulltoexpand;
 
-import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.drawable.BitmapDrawable;
 import android.util.AttributeSet;
@@ -13,13 +12,22 @@ import android.widget.ListView;
 import com.nineoldandroids.view.ViewPropertyAnimator;
 
 public class PullSeparateListView extends ListView{
+	/**
+	 * 最大滑动距离
+	 */
 	private static final float MAX_DELTAY = 200;
-	private static final int FACTOR = 5;
+	
+	/**
+	 * 摩擦系数
+	 */
+	private static final float FACTOR = 0.25f;
 	private static final float SCALEX = 0.98f;
 	private static final float SCALEY = 0.9f;
 	private int touchSlop;
 	
 	private boolean separate = false;
+	
+	private boolean allSeparate = false;
 	/**
 	 * 到达边界时，滑动的起始位置
 	 */
@@ -54,30 +62,22 @@ public class PullSeparateListView extends ListView{
 	}
 	
 	View downView;
-	@SuppressLint("ClickableViewAccessibility")
-	@Override
-	public boolean onTouchEvent(MotionEvent ev) {
-		switch(ev.getAction()){
-		case MotionEvent.ACTION_DOWN:
-			float downX = ev.getX();
-			float downY = ev.getY();
-			int position = pointToPosition((int)downX, (int)downY) - getFirstVisiblePosition();
-			downView = getChildAt(position);
-			if(downView != null){
-				ViewPropertyAnimator.animate(downView)
-				.scaleX(SCALEX).scaleY(SCALEY).setDuration(100)
-				.setInterpolator(new AccelerateInterpolator());
-			}
-			break;
-		}
-		return super.onTouchEvent(ev);
-	}
+	int downPosition;
 	
 	@Override
 	public boolean dispatchTouchEvent(MotionEvent ev) {
 		float currentY = ev.getY();
 		switch(ev.getAction()){
 		case MotionEvent.ACTION_DOWN:
+			float downX = ev.getX();
+			float downY = ev.getY();
+			downPosition = pointToPosition((int)downX, (int)downY) - getFirstVisiblePosition();
+			downView = getChildAt(downPosition);
+			if(downView != null){
+				ViewPropertyAnimator.animate(downView)
+				.scaleX(SCALEX).scaleY(SCALEY).setDuration(100)
+				.setInterpolator(new AccelerateInterpolator());
+			}
 			break;
 		case MotionEvent.ACTION_MOVE:
 			if(!separate){
@@ -97,7 +97,13 @@ public class PullSeparateListView extends ListView{
 				if(deltaY <= MAX_DELTAY){
 					for(int i = 0 ; i < getChildCount() ; i++){
 						View child = getChildAt(i);
-						child.setTranslationY(i*deltaY/FACTOR);
+						float distance = i*deltaY*FACTOR;
+						if(!allSeparate){
+							if(i > downPosition){
+								distance = downPosition*deltaY*FACTOR;
+							}
+						}
+						child.setTranslationY(distance);
 					}
 					//向分离方向的反方向滑动，但位置还未复原时
 					if(deltaY != 0 && currentY - preY < 0){
@@ -120,9 +126,16 @@ public class PullSeparateListView extends ListView{
 					separate = false;
 				}
 				if(Math.abs(deltaY) <= MAX_DELTAY){
-					for(int i = 0 ; i < getChildCount() ; i++){
-						View child = getChildAt(getChildCount() - i - 1);
-						child.setTranslationY(i*deltaY/FACTOR);
+					int visibleCount = getChildCount();
+					for(int i = 0 ; i < visibleCount ; i++){
+						View child = getChildAt(visibleCount - i - 1);
+						float distance = i*deltaY*FACTOR;
+						if(!allSeparate){
+							if((visibleCount - i - 1) < downPosition){
+								distance = (visibleCount - downPosition - 1)*deltaY*FACTOR;
+							}
+						}
+						child.setTranslationY(distance);
 					}
 					//向分离方向的反方向滑动，但位置还未复原时
 					if(deltaY != 0 && currentY - preY > 0){
