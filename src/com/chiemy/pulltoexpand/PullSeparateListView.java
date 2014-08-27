@@ -12,6 +12,11 @@ import android.widget.ListView;
 
 import com.nineoldandroids.view.ViewPropertyAnimator;
 
+/**
+ * 当滑动到顶部后底部时，实现Item的分离效果
+ * @author chiemy
+ *
+ */
 public class PullSeparateListView extends ListView{
 	/**
 	 * 最大滑动距离
@@ -63,6 +68,7 @@ public class PullSeparateListView extends ListView{
 	
 	@SuppressWarnings("deprecation")
 	private void init() {
+		//不知道怎么让divider和selector和Item一起移动，所以去除，需要自己加分割线
 		this.setDivider(null);
 		this.setSelector(new BitmapDrawable());
 		touchSlop = ViewConfiguration.get(getContext()).getScaledTouchSlop();
