@@ -1,6 +1,7 @@
 package com.chiemy.pulltoexpand;
 
 import android.content.Context;
+import android.content.res.TypedArray;
 import android.graphics.drawable.BitmapDrawable;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
@@ -27,7 +28,10 @@ public class PullSeparateListView extends ListView{
 	
 	private boolean separate = false;
 	
-	private boolean allSeparate = false;
+	/**
+	 * 展开全部
+	 */
+	private boolean separateAll;
 	/**
 	 * 到达边界时，滑动的起始位置
 	 */
@@ -41,6 +45,9 @@ public class PullSeparateListView extends ListView{
 
 	public PullSeparateListView(Context context, AttributeSet attrs) {
 		super(context, attrs);
+		TypedArray t = context.obtainStyledAttributes(attrs, R.styleable.PullSeparateListView);
+		separateAll = t.getBoolean(R.styleable.PullSeparateListView_separate_all, false);
+		t.recycle();
 		init();
 	}
 
@@ -59,6 +66,19 @@ public class PullSeparateListView extends ListView{
 		this.setDivider(null);
 		this.setSelector(new BitmapDrawable());
 		touchSlop = ViewConfiguration.get(getContext()).getScaledTouchSlop();
+	}
+	
+	/**
+	 * 是否全部分离
+	 * @param separateAll 如果为true,那么全部都会分离。否则的话，如果是顶部下拉，只有点击位置之前的Item会分离</br>
+	 * 					  如果是底部上拉，则只有点击位置之后的item会分离。默认为false
+	 */
+	public void setSeparateAll(boolean separateAll) {
+		this.separateAll = separateAll;
+	}
+	
+	public boolean isSeparateAll() {
+		return separateAll;
 	}
 	
 	View downView;
@@ -98,7 +118,7 @@ public class PullSeparateListView extends ListView{
 					for(int i = 0 ; i < getChildCount() ; i++){
 						View child = getChildAt(i);
 						float distance = i*deltaY*FACTOR;
-						if(!allSeparate){
+						if(!separateAll){
 							if(i > downPosition){
 								distance = downPosition*deltaY*FACTOR;
 							}
@@ -130,7 +150,7 @@ public class PullSeparateListView extends ListView{
 					for(int i = 0 ; i < visibleCount ; i++){
 						View child = getChildAt(visibleCount - i - 1);
 						float distance = i*deltaY*FACTOR;
-						if(!allSeparate){
+						if(!separateAll){
 							if((visibleCount - i - 1) < downPosition){
 								distance = (visibleCount - downPosition - 1)*deltaY*FACTOR;
 							}

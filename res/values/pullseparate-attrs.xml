@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="PullSeparateListView">
+        <attr name="separate_all" format="boolean"/>
+    </declare-styleable>
+</resources>
