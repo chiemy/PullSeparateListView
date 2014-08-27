@@ -1,15 +1,20 @@
-package com.chiemy.pulltoexpand;
+package com.chiemy.pullseparate;
 
 import android.content.Context;
 import android.content.res.TypedArray;
+import android.graphics.Rect;
 import android.graphics.drawable.BitmapDrawable;
 import android.util.AttributeSet;
+import android.view.GestureDetector;
+import android.view.GestureDetector.OnGestureListener;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.animation.AccelerateInterpolator;
+import android.widget.AbsListView;
 import android.widget.ListView;
 
+import com.chiemy.pullseparate.R;
 import com.nineoldandroids.view.ViewPropertyAnimator;
 
 /**
@@ -17,7 +22,7 @@ import com.nineoldandroids.view.ViewPropertyAnimator;
  * @author chiemy
  *
  */
-public class PullSeparateListView extends ListView{
+public class PullSeparateListView extends ListView implements OnGestureListener{
 	/**
 	 * 最大滑动距离
 	 */
@@ -47,6 +52,9 @@ public class PullSeparateListView extends ListView{
 	 */
 	private float preY;
 	private float deltaY;
+	private boolean reachTop,reachBottom;
+	private OnScrollListener mScrollListener;
+	GestureDetector detector;
 
 	public PullSeparateListView(Context context, AttributeSet attrs) {
 		super(context, attrs);
@@ -66,12 +74,52 @@ public class PullSeparateListView extends ListView{
 		init();
 	}
 	
+	private OnScrollListener listener = new OnScrollListener() {
+		@Override
+		public void onScrollStateChanged(AbsListView view, int scrollState) {
+			if(mScrollListener != null){
+				mScrollListener.onScrollStateChanged(view, scrollState);
+			}
+		}
+		
+		@Override
+		public void onScroll(AbsListView view, int firstVisibleItem,
+				int visibleItemCount, int totalItemCount) {
+			if(mScrollListener != null){
+				mScrollListener.onScroll(view, firstVisibleItem, visibleItemCount, totalItemCount);
+			}
+			if(firstVisibleItem == 0){
+				View firstView = getChildAt(firstVisibleItem);
+				if(firstView != null && firstView.getTop() >= 0){
+					reachTop = true;
+				}else{
+					reachTop = false;
+				}
+			}else{
+				reachTop = false;
+			}
+			if(firstVisibleItem + visibleItemCount == getCount()){
+				View lastView = getChildAt(visibleItemCount - 1);
+				if(lastView != null && lastView.getBottom() <= getHeight() && getCount() > getChildCount()){
+					reachBottom = true;
+				}else{
+					reachBottom = false;
+				}
+			}else{
+				reachBottom = false;
+			}
+		}
+	};
+	
 	@SuppressWarnings("deprecation")
 	private void init() {
 		//不知道怎么让divider和selector和Item一起移动，所以去除，需要自己加分割线
 		this.setDivider(null);
 		this.setSelector(new BitmapDrawable());
+		
 		touchSlop = ViewConfiguration.get(getContext()).getScaledTouchSlop();
+		super.setOnScrollListener(listener);
+		detector = new GestureDetector(getContext(), this);
 	}
 	
 	/**
@@ -87,9 +135,12 @@ public class PullSeparateListView extends ListView{
 		return separateAll;
 	}
 	
+	public void setOnScrollListener(OnScrollListener l) {
+		mScrollListener = l;
+	}
+	
 	View downView;
 	int downPosition;
-	
 	@Override
 	public boolean dispatchTouchEvent(MotionEvent ev) {
 		float currentY = ev.getY();
@@ -101,7 +152,7 @@ public class PullSeparateListView extends ListView{
 			downView = getChildAt(downPosition);
 			if(downView != null){
 				ViewPropertyAnimator.animate(downView)
-				.scaleX(SCALEX).scaleY(SCALEY).setDuration(100)
+				.scaleX(SCALEX).scaleY(SCALEY).setDuration(50)
 				.setInterpolator(new AccelerateInterpolator());
 			}
 			break;
@@ -110,7 +161,7 @@ public class PullSeparateListView extends ListView{
 				startY = currentY;
 			}
 			deltaY = currentY - startY;
-			if(isReachTopBound()){
+			if(reachTop){
 				separate = true;
 				//超过滑动允许的最大距离，则将起始位置向下移
 				if(deltaY > MAX_DELTAY){
@@ -126,6 +177,7 @@ public class PullSeparateListView extends ListView{
 						float distance = i*deltaY*FACTOR;
 						if(!separateAll){
 							if(i > downPosition){
+								downPosition = Math.max(1, downPosition);
 								distance = downPosition*deltaY*FACTOR;
 							}
 						}
@@ -142,7 +194,7 @@ public class PullSeparateListView extends ListView{
 				}
 				return false;
 			}
-			if(isReachBottomBound()){
+			if(reachBottom){
 				separate = true;
 				//超过滑动允许的最大距离，则将起始位置向上移
 				if(Math.abs(deltaY) > MAX_DELTAY){
@@ -158,7 +210,11 @@ public class PullSeparateListView extends ListView{
 						float distance = i*deltaY*FACTOR;
 						if(!separateAll){
 							if((visibleCount - i - 1) < downPosition){
-								distance = (visibleCount - downPosition - 1)*deltaY*FACTOR;
+								if(downPosition == visibleCount - 1){
+									distance = 1*deltaY*FACTOR;
+								}else{
+									distance = (visibleCount - downPosition - 1)*deltaY*FACTOR;
+								}
 							}
 						}
 						child.setTranslationY(distance);
@@ -190,7 +246,7 @@ public class PullSeparateListView extends ListView{
 					View child = getChildAt(i);
 					ViewPropertyAnimator.animate(child).translationY(0).setDuration(300).setInterpolator(new AccelerateInterpolator());
 				}
-				if(Math.abs(deltaY) > touchSlop){
+				if(deltaY > touchSlop){
 					return false;
 				}
 			}
@@ -199,11 +255,45 @@ public class PullSeparateListView extends ListView{
 		return super.dispatchTouchEvent(ev);
 	}
 	
+	
+	@Override
+	public boolean onDown(MotionEvent e) {
+		return false;
+	}
+
+	@Override
+	public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX,
+			float velocityY) {
+		return false;
+	}
+
+	@Override
+	public void onLongPress(MotionEvent e) {
+		
+	}
+
+	@Override
+	public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX,
+			float distanceY) {
+		return false;
+	}
+
+	@Override
+	public void onShowPress(MotionEvent e) {
+	}
+
+	@Override
+	public boolean onSingleTapUp(MotionEvent e) {
+		return false;
+	}
+	
+	
 	/**
 	 * 是否到达顶部
 	 * @return
 	 */
-	private boolean isReachTopBound() {
+	@Deprecated
+	protected boolean isReachTopBound() {
 		int firstVisPos = getFirstVisiblePosition();
 		if(firstVisPos == 0){
 			View firstView = getChildAt(firstVisPos);
@@ -220,11 +310,12 @@ public class PullSeparateListView extends ListView{
 	 * 是否到达底部
 	 * @return
 	 */
-	private boolean isReachBottomBound(){
+	@Deprecated
+	protected boolean isReachBottomBound(){
 		int lastVisPos = getLastVisiblePosition();
 		if(lastVisPos == getCount() - 1){
 			View lastView = getChildAt(getChildCount() - 1);
-			if(lastView != null && lastView.getBottom() <= getBottom() && getCount() > getChildCount()){
+			if(lastView != null && lastView.getBottom() <= getHeight() && getCount() > getChildCount()){
 				return true;
 			}else{
 				return false;
@@ -232,5 +323,5 @@ public class PullSeparateListView extends ListView{
 		}
 		return false;
 	}
-	
+
 }
