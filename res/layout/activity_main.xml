@@ -4,12 +4,12 @@
     android:layout_height="match_parent"
     tools:context="com.chiemy.pulltoexpand.MainActivity" >
 
-    <com.chiemy.pulltoexpand.FlexibleListView
+    <com.chiemy.pulltoexpand.PullSeparateListView
         android:id="@+id/pullExpandListView1"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         >
         
-    </com.chiemy.pulltoexpand.FlexibleListView>
+    </com.chiemy.pulltoexpand.PullSeparateListView>
 
 </RelativeLayout>
