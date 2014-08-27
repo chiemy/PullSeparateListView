@@ -1,25 +1,27 @@
 package com.chiemy.pulltoexpand;
 
-import com.nineoldandroids.view.ViewPropertyAnimator;
-
+import android.annotation.SuppressLint;
 import android.content.Context;
+import android.graphics.drawable.BitmapDrawable;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewConfiguration;
 import android.view.animation.AccelerateInterpolator;
-import android.widget.AbsListView;
-import android.widget.AbsListView.OnScrollListener;
 import android.widget.ListView;
+
+import com.nineoldandroids.view.ViewPropertyAnimator;
 
 public class PullSeparateListView extends ListView{
 	private static final float MAX_DELTAY = 200;
-	private Context context = null;
+	private static final int FACTOR = 5;
+	private static final float SCALEX = 0.98f;
+	private static final float SCALEY = 0.9f;
+	private int touchSlop;
+	
 	private boolean separate = false;
-	
-	private float maxDiatance = MAX_DELTAY;
-	
 	/**
-	 * 超出边界时，滑动的起始位置
+	 * 到达边界时，滑动的起始位置
 	 */
 	private float startY;
 	
@@ -27,20 +29,48 @@ public class PullSeparateListView extends ListView{
 	 * 上次滑动的位置，用于判断方向
 	 */
 	private float preY;
+	private float deltaY;
 
 	public PullSeparateListView(Context context, AttributeSet attrs) {
 		super(context, attrs);
-		this.context = context;
+		init();
 	}
 
 	public PullSeparateListView(Context context, AttributeSet attrs, int defStyle) {
 		super(context, attrs, defStyle);
-		this.context = context;
+		init();
 	}
 
 	public PullSeparateListView(Context context) {
 		super(context);
-		this.context = context;
+		init();
+	}
+	
+	@SuppressWarnings("deprecation")
+	private void init() {
+		this.setDivider(null);
+		this.setSelector(new BitmapDrawable());
+		touchSlop = ViewConfiguration.get(getContext()).getScaledTouchSlop();
+	}
+	
+	View downView;
+	@SuppressLint("ClickableViewAccessibility")
+	@Override
+	public boolean onTouchEvent(MotionEvent ev) {
+		switch(ev.getAction()){
+		case MotionEvent.ACTION_DOWN:
+			float downX = ev.getX();
+			float downY = ev.getY();
+			int position = pointToPosition((int)downX, (int)downY) - getFirstVisiblePosition();
+			downView = getChildAt(position);
+			if(downView != null){
+				ViewPropertyAnimator.animate(downView)
+				.scaleX(SCALEX).scaleY(SCALEY).setDuration(100)
+				.setInterpolator(new AccelerateInterpolator());
+			}
+			break;
+		}
+		return super.onTouchEvent(ev);
 	}
 	
 	@Override
@@ -53,7 +83,7 @@ public class PullSeparateListView extends ListView{
 			if(!separate){
 				startY = currentY;
 			}
-			float deltaY = currentY - startY;
+			deltaY = currentY - startY;
 			if(isReachTopBound()){
 				separate = true;
 				//超过滑动允许的最大距离，则将起始位置向下移
@@ -61,12 +91,13 @@ public class PullSeparateListView extends ListView{
 					startY = currentY - MAX_DELTAY;
 				}else if(deltaY < 0){ //为负值时归0
 					deltaY = 0;
+					separate = false;
 				}
 				
 				if(deltaY <= MAX_DELTAY){
 					for(int i = 0 ; i < getChildCount() ; i++){
 						View child = getChildAt(i);
-						child.setTranslationY(i*deltaY/2);
+						child.setTranslationY(i*deltaY/FACTOR);
 					}
 					//向分离方向的反方向滑动，但位置还未复原时
 					if(deltaY != 0 && currentY - preY < 0){
@@ -74,7 +105,6 @@ public class PullSeparateListView extends ListView{
 					}
 					//deltaY=0，说明位置已经复原，然后交给父类处理
 					if(deltaY == 0){
-						separate = false;
 						return super.dispatchTouchEvent(ev);
 					}
 				}
@@ -87,11 +117,12 @@ public class PullSeparateListView extends ListView{
 					startY = currentY + MAX_DELTAY;
 				}else if(deltaY > 0){
 					deltaY = 0;
+					separate = false;
 				}
 				if(Math.abs(deltaY) <= MAX_DELTAY){
 					for(int i = 0 ; i < getChildCount() ; i++){
 						View child = getChildAt(getChildCount() - i - 1);
-						child.setTranslationY(i*deltaY/2);
+						child.setTranslationY(i*deltaY/FACTOR);
 					}
 					//向分离方向的反方向滑动，但位置还未复原时
 					if(deltaY != 0 && currentY - preY > 0){
@@ -99,7 +130,6 @@ public class PullSeparateListView extends ListView{
 					}
 					//deltaY=0，说明位置已经复原，然后交给父类处理
 					if(deltaY == 0){
-						separate = false;
 						return super.dispatchTouchEvent(ev);
 					}
 				}
@@ -109,19 +139,26 @@ public class PullSeparateListView extends ListView{
 			break;
 		case MotionEvent.ACTION_CANCEL:
 		case MotionEvent.ACTION_UP:
+			preY = 0;
+			if(downView != null){
+				ViewPropertyAnimator.animate(downView)
+				.scaleX(1f).scaleY(1f).setDuration(separate ? 300 : 100)
+				.setInterpolator(new AccelerateInterpolator());
+			}
 			if(separate){
 				separate = false;
 				for(int i = 0 ; i < getChildCount() ; i++){
 					View child = getChildAt(i);
 					ViewPropertyAnimator.animate(child).translationY(0).setDuration(300).setInterpolator(new AccelerateInterpolator());
 				}
+				if(Math.abs(deltaY) > touchSlop){
+					return false;
+				}
 			}
-			preY = 0;
 			break;
 		}
 		return super.dispatchTouchEvent(ev);
 	}
-	
 	
 	/**
 	 * 是否到达顶部
