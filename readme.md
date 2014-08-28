@@ -8,17 +8,14 @@
 
 ##用法
 在代码中
-{% highlight java %}
 
 	PullSeparateListView lv = (PullSeparateListView) findViewById(R.id.pullExpandListView);
 	//全部分离设置为true,部分分离设置为false。默认为false
 	lv.setSeparateAll(true);
 
-{% endhighlight %}
 
 在`xml`中
 
-{% highlight xml %}
 
 	<com.chiemy.pullseparate.PullSeparateListView
         android:id="@+id/pullExpandListView1"
@@ -29,6 +26,5 @@
         >
     </com.chiemy.pullseparate.PullSeparateListView>
 
-{% endhighlight %}
 
 另外还添加了点击缩放的效果
