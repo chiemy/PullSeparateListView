@@ -13,13 +13,15 @@ import android.widget.CompoundButton.OnCheckedChangeListener;
 import android.widget.ListView;
 import android.widget.Toast;
 
-public class MainActivity extends Activity {
+public class MainActivity extends Activity implements OnCheckedChangeListener{
 	private String [] arr = {"a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","g","h","i","j","k","l","m","n","o","p","q"};
+	private PullSeparateListView lv;
+	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
-		final PullSeparateListView lv = (PullSeparateListView) findViewById(R.id.pullExpandListView1);
+		lv = (PullSeparateListView) findViewById(R.id.pullExpandListView1);
 		ArrayAdapter<String> adapter = new ArrayAdapter<>(this, R.layout.item, R.id.text, arr);
 		lv.setAdapter(adapter);
 		lv.setOnItemClickListener(new OnItemClickListener() {
@@ -29,16 +31,26 @@ public class MainActivity extends Activity {
 				Toast.makeText(MainActivity.this, arr[position], Toast.LENGTH_SHORT).show();
 			}
 		});
-		View header = LayoutInflater.from(this).inflate(R.layout.header_view, null);
+		//View header = LayoutInflater.from(this).inflate(R.layout.header_view, null);
 		//lv.addHeaderView(header);
 		
-		CheckBox cb = (CheckBox) findViewById(R.id.checkBox);
-		cb.setOnCheckedChangeListener(new OnCheckedChangeListener() {
-			@Override
-			public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-				lv.setSeparateAll(isChecked);
-			}
-		});
+		CheckBox cb1 = (CheckBox) findViewById(R.id.is_separateAll_cb);
+		CheckBox cb2 = (CheckBox) findViewById(R.id.is_down_anim_cb);
+		cb1.setChecked(lv.isSeparateAll());
+		cb2.setChecked(lv.isShowDownAnim());
+		cb1.setOnCheckedChangeListener(this);
+		cb2.setOnCheckedChangeListener(this);
+	}
+	@Override
+	public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+		switch(buttonView.getId()){
+		case R.id.is_separateAll_cb:
+			lv.setSeparateAll(isChecked);
+			break;
+		case R.id.is_down_anim_cb:
+			lv.setShowDownAnim(isChecked);
+			break;
+		}
 	}
 	
 }

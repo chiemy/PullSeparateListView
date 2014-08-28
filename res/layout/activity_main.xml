@@ -8,18 +8,26 @@
         android:id="@+id/pullExpandListView1"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_below="@+id/checkBox"
-        android:paddingBottom="10dp"
+        android:layout_below="@+id/is_separateAll_cb"
         >
         
     </com.chiemy.pullseparate.PullSeparateListView>
 
     <CheckBox
-        android:id="@+id/checkBox"
+        android:id="@+id/is_separateAll_cb"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentLeft="true"
         android:layout_alignParentTop="true"
         android:text="separateAll" />
+
+    <CheckBox
+        android:id="@+id/is_down_anim_cb"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_toRightOf="@+id/is_separateAll_cb"
+        android:layout_marginLeft="10dp"
+        android:text="isShowDownAnim" />
 
 </RelativeLayout>
