@@ -16,7 +16,6 @@
 
 在`xml`中
 
-
 	<com.chiemy.pullseparate.PullSeparateListView
         android:id="@+id/pullExpandListView1"
         android:layout_width="match_parent"
