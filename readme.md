@@ -6,7 +6,7 @@
 
 2.部分分离模式，以点击位置为分界点，部分item分离
 
-##用法
+## 用法
 在代码中
 
 	PullSeparateListView lv = (PullSeparateListView) findViewById(R.id.pullExpandListView);
